@@ -2,8 +2,8 @@
   "name": "vertical-tabs-but-better",
   "displayName": "Vertical Tabs But Better",
   "description": "View no Explorer que lista apenas os arquivos abertos no editor, com opções de expansão/collapse e agrupamento por pasta.",
-  "version": "0.0.1",
-  "publisher": "your-name",
+  "version": "0.0.2",
+  "publisher": "denmarc",
   "repository": {
     "type": "git",
     "url": "https://github.com/your-name/vertical-tabs-but-better"
@@ -76,6 +76,9 @@
       ]
     }
   },
-  "scripts": {},
+  "scripts": {
+    "publish_new_version": "bash ./publish_new_version",
+    "package:vsix": "npx -y vsce package"
+  },
   "devDependencies": {}
 }

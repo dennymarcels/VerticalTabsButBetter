@@ -1,0 +1,77 @@
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: npm run publish_new_version
+
+This reads `version` from package.json (you MUST bump and commit this manually beforehand),
+creates an annotated git tag `v<version>`, and pushes the tag to `origin`.
+
+Control optional behavior with environment variables:
+- CREATE_VSIX=true  -> create a local .vsix package via `npx -y vsce package`
+- VSCE_PAT=<token>  -> publish via `npx -y vsce publish <version> --pat "$VSCE_PAT"`
+
+The script aborts if the working tree is dirty or if the tag `v<version>` already exists.
+EOF
+}
+
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  usage
+  exit 0
+fi
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Error: not inside a git repository" >&2
+  exit 3
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Error: working tree has uncommitted changes. Please commit before running this script." >&2
+  git status --porcelain
+  exit 4
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "Error: node is required to read package.json" >&2
+  exit 5
+fi
+
+VERSION=$(node -e "console.log(require('./package.json').version)")
+
+if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}(-.+)?$ ]]; then
+  echo "Error: version in package.json ('$VERSION') does not look like semver X.Y or X.Y.Z" >&2
+  exit 6
+fi
+
+TAG="v$VERSION"
+
+if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+  echo "Error: tag $TAG already exists. Aborting to avoid duplicate release." >&2
+  exit 7
+fi
+
+echo "Using version $VERSION from package.json"
+
+echo "Creating annotated git tag $TAG..."
+git tag -a "$TAG" -m "release $TAG"
+
+echo "Pushing tag $TAG to origin..."
+git push origin "$TAG"
+
+if [ "${CREATE_VSIX:-}" = "true" ]; then
+  if command -v npx >/dev/null 2>&1; then
+    echo "CREATE_VSIX=true detected — creating local .vsix package (npx vsce package)..."
+    npx -y vsce package || true
+  else
+    echo "Warning: npx not found; skipping .vsix creation." >&2
+  fi
+fi
+
+if [ -n "${VSCE_PAT:-}" ]; then
+  echo "VSCE_PAT detected — publishing via vsce publish $VERSION --pat \$VSCE_PAT"
+  npx -y vsce publish "$VERSION" --pat "$VSCE_PAT" || true
+fi
+
+echo "Done. Tag $TAG pushed. CI (if configured) should pick up the tag and publish automatically."
