@@ -49,15 +49,25 @@ class OpenEditorsProvider {
         .filter(uri => uri && uri.scheme === 'file')
         .map(uri => uri.fsPath);
 
-      if (tabPaths.length) {
-        return [...new Set(tabPaths)];
-      }
+      return [...new Set(tabPaths)];
     }
 
     return vscode.workspace.textDocuments
       .filter(document => document.uri && document.uri.scheme === 'file')
       .map(document => document.uri.fsPath)
       .filter((value, index, all) => all.indexOf(value) === index);
+  }
+
+  _getOpenTabsWithUris() {
+    if (!vscode.window.tabGroups || !Array.isArray(vscode.window.tabGroups.all)) {
+      return [];
+    }
+
+    return vscode.window.tabGroups.all.flatMap(group =>
+      (group.tabs || [])
+        .map(tab => ({ tab, uri: this._getUriFromTabInput(tab.input) }))
+        .filter(entry => entry.uri && entry.uri.scheme === 'file')
+    );
   }
 
   _getUriFromTabInput(input) {
@@ -126,7 +136,7 @@ class OpenEditorsProvider {
     });
 
     // Convert rootsMap to array, sort children
-    const roots = Array.from(rootsMap.values()).map(root => this._sortTree(root));
+    const roots = Array.from(rootsMap.values()).map(root => this._compactFolders(this._sortTree(root), true));
     this._tree = roots;
   }
 
@@ -138,6 +148,27 @@ class OpenEditorsProvider {
       });
       node.children = node.children.map(c => this._sortTree(c));
     }
+    return node;
+  }
+
+  _compactFolders(node, isRoot = false) {
+    if (!node || !node.isFolder || !node.children || !node.children.length) {
+      return node;
+    }
+
+    node.children = node.children.map(child => this._compactFolders(child, false));
+
+    if (isRoot) {
+      return node;
+    }
+
+    while (node.children.length === 1 && node.children[0].isFolder) {
+      const onlyChild = node.children[0];
+      node.label = path.join(node.label, onlyChild.label).replace(/\\/g, '/');
+      node.uri = onlyChild.uri;
+      node.children = onlyChild.children;
+    }
+
     return node;
   }
 
@@ -236,6 +267,36 @@ class OpenEditorsProvider {
     this._onDidChangeTreeData.fire();
   }
 
+  async closeNode(node) {
+    if (!node || !node.uri || node.uri.scheme !== 'file') {
+      return;
+    }
+
+    const openTabs = this._getOpenTabsWithUris();
+    const tabsToClose = node.isFolder
+      ? openTabs
+          .filter(entry => this._isUriInsideFolder(entry.uri, node.uri))
+          .map(entry => entry.tab)
+      : openTabs
+          .filter(entry => entry.uri.fsPath === node.uri.fsPath)
+          .map(entry => entry.tab);
+
+    if (!tabsToClose.length) {
+      return;
+    }
+
+    await vscode.window.tabGroups.close(tabsToClose);
+  }
+
+  _isUriInsideFolder(childUri, folderUri) {
+    if (!childUri || !folderUri) {
+      return false;
+    }
+
+    const folderPath = folderUri.fsPath;
+    return childUri.fsPath === folderPath || childUri.fsPath.startsWith(`${folderPath}${path.sep}`);
+  }
+
   setFolderExpanded(node, expanded) {
     if (!node || !node.uri || !node.uri.fsPath) {
       return;
@@ -254,35 +315,44 @@ class OpenEditorsProvider {
 function activate(context) {
   const provider = new OpenEditorsProvider(context);
 
-  const treeView = vscode.window.createTreeView('openEditorsFilter', { treeDataProvider: provider });
+  const treeView = vscode.window.createTreeView('verticalTabsButBetter', { treeDataProvider: provider });
   context.subscriptions.push(treeView);
 
   // Provider is always enabled: the view shows currently open editors
   provider.enabled = true;
   provider.refresh();
 
-  const expandCommand = vscode.commands.registerCommand('openEditorsFilter.expandAll', async () => {
+  const expandCommand = vscode.commands.registerCommand('verticalTabsButBetter.expandAll', async () => {
     try {
-      console.log('[OpenEditorsFilter] expandAll invoked');
+      console.log('[VerticalTabsButBetter] expandAll invoked');
       // expand all folders by setting provider state
       provider.expandAllFolders();
-      console.log('[OpenEditorsFilter] expandAll completed');
+      console.log('[VerticalTabsButBetter] expandAll completed');
     } catch (err) {
       console.error('expandAll error', err);
     }
   });
 
-  const collapseCommand = vscode.commands.registerCommand('openEditorsFilter.collapseAll', async () => {
+  const collapseCommand = vscode.commands.registerCommand('verticalTabsButBetter.collapseAll', async () => {
     try {
-      console.log('[OpenEditorsFilter] collapseAll invoked');
+      console.log('[VerticalTabsButBetter] collapseAll invoked');
       provider.collapseAllFolders();
-      console.log('[OpenEditorsFilter] collapseAll completed');
+      console.log('[VerticalTabsButBetter] collapseAll completed');
     } catch (err) {
       console.error('collapseAll error', err);
     }
   });
 
-  context.subscriptions.push(expandCommand, collapseCommand);
+  const closeNodeCommand = vscode.commands.registerCommand('verticalTabsButBetter.closeNode', async node => {
+    try {
+      await provider.closeNode(node);
+      provider.refresh();
+    } catch (error) {
+      console.error('[VerticalTabsButBetter] closeNode error', error);
+    }
+  });
+
+  context.subscriptions.push(expandCommand, collapseCommand, closeNodeCommand);
 
   treeView.onDidExpandElement(event => {
     provider.setFolderExpanded(event.element, true);
@@ -297,7 +367,7 @@ function activate(context) {
     try {
       provider.refresh();
     } catch (e) {
-      console.error('[OpenEditorsFilter] auto expand error', e);
+      console.error('[VerticalTabsButBetter] auto expand error', e);
     }
   }, 200);
 }

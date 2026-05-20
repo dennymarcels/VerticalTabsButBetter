@@ -1,9 +1,14 @@
 {
-  "name": "open-editors-filter",
-  "displayName": "Filtro Explorador - Apenas Arquivos Abertos",
-  "description": "Mostra apenas os arquivos abertos no editor dentro do container Explorer e adiciona um botão para ativar/desativar o filtro.",
+  "name": "vertical-tabs-but-better",
+  "displayName": "Vertical Tabs But Better",
+  "description": "View no Explorer que lista apenas os arquivos abertos no editor, com opções de expansão/collapse e agrupamento por pasta.",
   "version": "0.0.1",
   "publisher": "your-name",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-name/vertical-tabs-but-better"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.88.0"
   },
@@ -17,23 +22,29 @@
   "contributes": {
     "commands": [
       {
-        "command": "openEditorsFilter.expandAll",
-        "title": "Open Editors Filter: Expand All",
+        "command": "verticalTabsButBetter.expandAll",
+        "title": "Vertical Tabs But Better: Expand All",
         "category": "Explorer",
         "icon": "$(expand-all)"
       },
       {
-        "command": "openEditorsFilter.collapseAll",
-        "title": "Open Editors Filter: Collapse All",
+        "command": "verticalTabsButBetter.collapseAll",
+        "title": "Vertical Tabs But Better: Collapse All",
         "category": "Explorer",
         "icon": "$(collapse-all)"
+      },
+      {
+        "command": "verticalTabsButBetter.closeNode",
+        "title": "Vertical Tabs But Better: Close",
+        "category": "Explorer",
+        "icon": "$(close)"
       }
     ],
     "views": {
       "explorer": [
         {
-          "id": "openEditorsFilter",
-          "name": "Open Editors Filter",
+          "id": "verticalTabsButBetter",
+          "name": "Vertical Tabs But Better",
           "icon": "resources/view.svg"
         }
       ]
@@ -41,14 +52,26 @@
     "menus": {
       "view/title": [
         {
-          "command": "openEditorsFilter.collapseAll",
-          "when": "view == openEditorsFilter",
+          "command": "verticalTabsButBetter.collapseAll",
+          "when": "view == verticalTabsButBetter",
           "group": "navigation@90"
         },
         {
-          "command": "openEditorsFilter.expandAll",
-          "when": "view == openEditorsFilter",
+          "command": "verticalTabsButBetter.expandAll",
+          "when": "view == verticalTabsButBetter",
           "group": "navigation@100"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "verticalTabsButBetter.closeNode",
+          "when": "view == verticalTabsButBetter && viewItem == file",
+          "group": "inline@100"
+        },
+        {
+          "command": "verticalTabsButBetter.closeNode",
+          "when": "view == verticalTabsButBetter && viewItem == folder",
+          "group": "inline@100"
         }
       ]
     }
