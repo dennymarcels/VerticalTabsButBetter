@@ -1,0 +1,58 @@
+{
+  "name": "open-editors-filter",
+  "displayName": "Filtro Explorador - Apenas Arquivos Abertos",
+  "description": "Mostra apenas os arquivos abertos no editor dentro do container Explorer e adiciona um botão para ativar/desativar o filtro.",
+  "version": "0.0.1",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "openEditorsFilter.expandAll",
+        "title": "Open Editors Filter: Expand All",
+        "category": "Explorer",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "openEditorsFilter.collapseAll",
+        "title": "Open Editors Filter: Collapse All",
+        "category": "Explorer",
+        "icon": "$(collapse-all)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "openEditorsFilter",
+          "name": "Open Editors Filter",
+          "icon": "resources/view.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "openEditorsFilter.collapseAll",
+          "when": "view == openEditorsFilter",
+          "group": "navigation@90"
+        },
+        {
+          "command": "openEditorsFilter.expandAll",
+          "when": "view == openEditorsFilter",
+          "group": "navigation@100"
+        }
+      ]
+    }
+  },
+  "scripts": {},
+  "devDependencies": {}
+}
