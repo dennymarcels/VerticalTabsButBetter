@@ -2,11 +2,11 @@
   "name": "vertical-tabs-but-better",
   "displayName": "Vertical Tabs But Better",
   "description": "View no Explorer que lista apenas os arquivos abertos no editor, com opções de expansão/collapse e agrupamento por pasta.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "denmarc",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-name/vertical-tabs-but-better"
+    "url": "https://github.com/dennymarcels/vertical-tabs-but-better"
   },
   "license": "MIT",
   "engines": {

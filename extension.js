@@ -135,8 +135,9 @@ class OpenEditorsProvider {
       });
     });
 
-    // Convert rootsMap to array, sort children
+    // Convert rootsMap to array, sort children, then sort root folders alphabetically
     const roots = Array.from(rootsMap.values()).map(root => this._compactFolders(this._sortTree(root), true));
+    roots.sort((a, b) => a.label.localeCompare(b.label));
     this._tree = roots;
   }
 
